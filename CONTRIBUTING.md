@@ -2,7 +2,7 @@
 
 ## Maintenance status
 
-The protocol is a reference release and is not actively maintained. The author will not be developing new protocol versions, reviewing implementation pull requests or answering support questions on a schedule. Issues and discussions are welcome, but a reply is not guaranteed.
+The protocol is maintained as time allows. There is no schedule for new protocol versions, reviews of implementation pull requests or answers to support questions. Issues and discussions are welcome, and replies come when the schedule permits. If the protocol gets real use (submitted fabrication-log entries, forks, category packs), active development may resume.
 
 Two things are open to contributions and will be reviewed when time allows:
 

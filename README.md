@@ -6,7 +6,7 @@ Author: Stephen Bradley, PharmD, Prosthetic Mind Holdings LLC
 Developed: January to March 2026. Locked: v2.0 (March 13, 2026), v2.0.1 (March 23, 2026). Proposed revision: v2.1 (April 2026; no ratified version found).
 Status: released as open methodology under Apache 2.0. No product is being commercialized from this repository.
 
-**Maintenance status.** The protocol is a reference release and is not actively maintained. Issues and discussions are welcome, but a reply is not guaranteed. The reason is plain: this was built by a pharmacist who is a stay-at-home father, working around caregiving, who wanted to find out whether the verification habits of a regulated profession carry over to AI-generated work. Documenting that and releasing it is the extent of what his schedule allows. If you build on it, you will not be waiting on the author.
+**Maintenance status.** Maintained as time allows. This was built by a pharmacist who is a stay-at-home father, working around caregiving, to find out whether the verification habits of a regulated profession carry over to AI-generated work. Issues and discussions are welcome, and replies come when the schedule permits. If the protocol gets real use (submitted fabrication-log entries, forks, category packs), active development may resume. If you build on it in the meantime, you will not be waiting on the author.
 
 Two parts of the repository are open to contributions: the **fabrication log** (a small dataset of logged model errors, see [Contributing to the fabrication log](#contributing-to-the-fabrication-log)) and **category packs** for document types the prompts have not been tried on. Submissions are reviewed when time allows.
 
