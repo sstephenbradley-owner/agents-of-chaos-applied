@@ -1,6 +1,6 @@
 # Reference implementation: Tribunal (alpha)
 
-`tribunal-alpha/` is a small web app that runs the model calls of an AoCA-style review with your own API keys (Anthropic, Google Gemini, or both). It is a static page plus three Netlify serverless functions. Status: alpha, provided as is, not maintained.
+`tribunal-alpha/` is a small web app that runs the model calls of an AoCA-style review with your own API keys (Anthropic, Google Gemini, or both). It is a static page plus three Netlify serverless functions. Status: alpha, provided as is, maintained as time allows.
 
 ## Nodes
 
