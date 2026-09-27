@@ -374,7 +374,7 @@ See `CITATION.cff`. Suggested form:
 
 That DOI always resolves to the latest version. To cite the exact v2.0.1 snapshot, use https://doi.org/10.5281/zenodo.22985671.
 
-GitHub: https://github.com/sstephenbradley-owner/agents-of-chaos-applied. A copy with the fabrication log as a browsable dataset is on Hugging Face: [to be added].
+GitHub: https://github.com/sstephenbradley-owner/agents-of-chaos-applied. A copy with the fabrication log as a browsable dataset is on Hugging Face: https://huggingface.co/datasets/sbradley90/agents-of-chaos-applied.
 
 ## License
 
