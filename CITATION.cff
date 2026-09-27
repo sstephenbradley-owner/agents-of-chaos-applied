@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use or build on this protocol or the fabrication log, please cite it as below."
+type: dataset
+title: "AoCA: Agents of Chaos Applied. A human-adjudicated cross-model adversarial review protocol with clinical evidence-hierarchy weighting"
+version: "2.0.1"
+date-released: "2026-09-26"
+license: Apache-2.0
+authors:
+  - family-names: Bradley
+    given-names: Stephen
+    affiliation: "Prosthetic Mind Holdings LLC"
+abstract: >-
+  AoCA is a procedure for catching errors, misattributed or invented sources,
+  overclaiming and sycophancy in AI-drafted documents. It stages structured
+  disagreement between model sessions from different families, applies an
+  Accuracy Mandate and a clinical evidence hierarchy to the reviewer's own
+  findings, and routes every unresolved disagreement to a human decision
+  authority. The release includes the protocol versions, prompt templates, a
+  single-agent variant, a two-axis citation standard, case studies rebuilt from
+  transcripts, and a fabrication log published as a dataset.
+keywords:
+  - adversarial validation
+  - cross-model review
+  - hallucination detection
+  - citation verification
+  - human-in-the-loop
+  - evidence hierarchy
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"   # add after Zenodo mints the DOI
+# repository-code: "https://github.com/OWNER/aoca"   # add after the GitHub repo exists
+references:
+  - type: article
+    title: "Agents of Chaos"
+    authors:
+      - family-names: Shapira
+        given-names: Natalie
+      - name: "et al."
+    identifiers:
+      - type: other
+        value: "arXiv:2602.20021"
+    year: 2026

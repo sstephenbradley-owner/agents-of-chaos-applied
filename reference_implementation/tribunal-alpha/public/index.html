@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tribunal: audit layer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{--paper:#FBF8F1;--ink:#1F2A2E;--muted:#6B7478;--line:#D9D2C2;--verdict:#0F5C57;--warn:#B4541E;--strike:#8C1F1F;--soft:#EEF3F2}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:Charter,"Iowan Old Style",Georgia,serif;line-height:1.45;font-size:17px}
+  main{max-width:720px;margin:0 auto;padding:22px 18px 60px}
+  h1{font-weight:400;font-size:34px;margin:0 0 2px;letter-spacing:.01em}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:16px}
+  textarea{width:100%;min-height:200px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:14px;font:inherit;font-size:16px;resize:vertical}
+  textarea:focus,input[type=url]:focus{outline:2px solid var(--verdict);outline-offset:1px}
+  input[type=url]{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:14px;font:inherit;font-size:16px}
+  .or{color:var(--muted);font-size:15px;margin:10px 0}
+  .or input{font:inherit;font-size:14px}
+  .row{display:flex;gap:12px;align-items:center;margin:12px 0 26px;flex-wrap:wrap}
+  button{font:inherit;font-size:17px;padding:14px 22px;border-radius:6px;border:none;background:var(--verdict);color:#fff;cursor:pointer;min-height:48px}
+  button:disabled{background:#9AAFAD;cursor:wait}
+  button.quiet{background:transparent;color:var(--verdict);border:1px solid var(--verdict)}
+  .status{color:var(--muted);font-size:15px}
+  .stage{display:flex;gap:8px;margin:0 0 22px;flex-wrap:wrap}
+  .stage span{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:14px;color:var(--muted)}
+  .stage span.on{border-color:var(--verdict);color:var(--verdict)}
+  .stage span.done{background:var(--verdict);border-color:var(--verdict);color:#fff}
+  .summary{background:var(--soft);border-radius:8px;padding:16px 18px;margin-bottom:22px}
+  .summary h2{margin:0 0 6px;font-size:20px;font-weight:400}
+  .claim{border-top:1px solid var(--line);padding:18px 0}
+  .claim:last-child{border-bottom:1px solid var(--line)}
+  .quote{font-style:italic;margin:0 0 10px}
+  .ruling{display:inline-block;font-size:14px;padding:3px 10px;border-radius:4px;color:#fff;margin-bottom:8px}
+  .ruling.upheld{background:var(--verdict)}
+  .ruling.unsupported{background:var(--warn)}
+  .ruling.fabricated,.ruling.contradicted{background:var(--strike)}
+  .ruling.editorial{background:#4E5A7A}
+  .ruling.citation-mismatch,.ruling.overreach,.ruling.novel-underpowered{background:var(--warn)}
+  .ruling.novel-supported,.ruling.novel{background:#2E6F3E}
+  .ruling.prior-art{background:#7A6320} .ruling.incremental{background:#4E5A7A}
+  .ruling.ev-strong,.ruling.ev-adequate{background:var(--verdict)}
+  .ruling.ev-weak,.ruling.ev-none{background:var(--warn)}
+  .ruling.ev-not-assessable{background:#6B7478}
+  .who{color:var(--muted);font-size:14px;margin:8px 0 2px}
+  .claim p{margin:0 0 4px}
+  .err{color:var(--strike)}
+  .hidden{display:none}
+  details{border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:18px;background:#fff}
+  summary{cursor:pointer;font-size:16px}
+  label.f{display:block;font-size:15px;color:var(--muted);margin:12px 0 4px}
+  input[type=password],input[type=text],select{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:12px;font:inherit;font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .nodes{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;margin-top:8px}
+  .nodes select{padding:8px}
+  .fine{font-size:14px;color:var(--muted);margin-top:8px}
+  #about h3{font-size:17px;font-weight:600;margin:18px 0 6px}
+  #about p,#about li{font-size:16px}
+  #about ul,#about ol{padding-left:20px;margin:6px 0}
+  #about li{margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Tribunal</h1>
+  <p class="sub">The audit layer for writing, whether you used AI or not.</p>
+
+  <details id="about" open>
+    <summary>About this project: what it is, how to use it, what it's for</summary>
+
+    <p>Tribunal fact-checks written work by refusing to let one model grade its own homework. Instead of asking a single model "is this accurate?", it splits the job across separate calls that deliberately know different things:</p>
+    <ul>
+      <li><b>Drafter</b> reads the text and pulls out the claims a reader could actually check.</li>
+      <li><b>Adversary</b> receives those claims stripped of all context (no source text, no author to defend them) and argues why each might be wrong. Isolation is the point: it can't be swayed by surrounding prose or by an argument it already agreed with.</li>
+      <li><b>Reference</b> searches the live record. It's the only node that can see past its own training cutoff, which is how the pipeline avoids confidently calling a recent true event a fabrication.</li>
+      <li><b>Judge</b> sees everything and rules, weighing a sourced finding above an unsourced objection.</li>
+    </ul>
+    <p>Each node's blindness is deliberate. A model that sees the whole conversation tends to agree with it.</p>
+
+    <h3>How to use it</h3>
+    <ol>
+      <li>Open <b>Keys and models</b> and paste an API key: Anthropic, Google Gemini, or both. Keys go from your browser to this site's function to the provider on each request and are never stored on the server. "Remember" keeps them in your browser only.</li>
+      <li>Pick a mode. One provider for everything, or <b>multi-model</b>, which assigns each node to a different model so the Judge never grades its own Drafter.</li>
+      <li>Give it something to read: a link, a PDF or Word file, or pasted text.</li>
+      <li>Tick <b>Academic mode</b> for a manuscript (see below). Leave it off for essays, articles, reports, and posts.</li>
+      <li>Press Audit. Each claim comes back with the ruling, the reasoning, the attack against it, and whatever the record said.</li>
+    </ol>
+
+    <h3>What it's for</h3>
+    <p><b>General writing.</b> Essays, journalism, op-eds, reports, marketing copy, grant prose: anywhere a confident sentence might be carrying a number, a date, or an attribution that nobody checked. It's as useful on human writing as on AI-assisted drafts; the failure mode it catches (fluent, specific, unverified) is one people produce on their own.</p>
+    <p><b>Academic mode.</b> Built for manuscripts. The Reference node searches the literature rather than the open web, and every source's publication year is resolved against PubMed and Crossref so that work published <i>after</i> your paper can never be used as prior art against it. An Evidence Appraiser reads your manuscript and rates the strength of its own evidence (design, controls, sample size, whether a causal claim is resting on correlational data), scoped to what the document form actually reports, so an abstract isn't penalised for omitting statistics. Each claim is then ruled on three independent axes: <b>is it true</b>, <b>is it new</b>, and <b>is it evidenced</b>. A finding can be sound and unoriginal, or original and thinly supported, and those deserve different sentences in a revision letter.</p>
+    <p>A claim that departs from the published literature is not thereby wrong; novel results are supposed to depart from it. That's why the evidence axis exists separately from the truth axis.</p>
+
+    <h3>What it won't do</h3>
+    <ul>
+      <li>Paywalled and login-walled pages won't fetch. Paste the text instead.</li>
+      <li>Literature checks reach abstracts reliably and full text only when it's open access.</li>
+      <li>Provider safety filters sometimes refuse a legitimate manuscript outright. This has been seen with select-agent microbiology. The run stops and says so.</li>
+      <li>It doesn't yet read your unpublished data and check your results against it. That's next.</li>
+      <li>It is an alpha, and its rulings are a prompt for your judgment, not a substitute for it. Verify anything before you act on it.</li>
+    </ul>
+    <p class="fine">Built by Stephen Bradley, PharmD.</p>
+  </details>
+
+  <details id="settings">
+    <summary>Keys and models</summary>
+    <div class="grid">
+      <div><label class="f">Anthropic API key</label><input type="password" id="k_anthropic" autocomplete="off" placeholder="sk-ant-…"></div>
+      <div><label class="f">Gemini API key</label><input type="password" id="k_gemini" autocomplete="off" placeholder="AIza…"></div>
+      <div><label class="f">Claude model</label><input type="text" id="m_anthropic" value="claude-sonnet-4-6"></div>
+      <div><label class="f">Gemini model</label><input type="text" id="m_gemini" value="gemini-2.5-pro"></div>
+    </div>
+    <label class="f">Mode</label>
+    <select id="mode">
+      <option value="single">Single model: every node is Claude</option>
+      <option value="single-gemini">Single model: every node is Gemini</option>
+      <option value="multi">Multi-model: assign each node</option>
+    </select>
+    <div class="nodes" id="nodes">
+      <span>Drafter</span><select data-node="drafter"><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select>
+      <span>Adversary</span><select data-node="adversary"><option value="anthropic">Claude</option><option value="gemini" selected>Gemini</option></select>
+      <span>Reference</span><select data-node="reference"><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select>
+      <span>Evidence</span><select data-node="evidence"><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select>
+      <span>Judge</span><select data-node="judge"><option value="anthropic">Claude</option><option value="gemini" selected>Gemini</option></select>
+    </div>
+    <label class="f" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="remember" style="width:auto"> Remember keys on this device</label>
+    <p class="fine">Keys go from your browser to this site's function to the provider, per request. They are not stored on the server.</p>
+  </details>
+
+  <input id="url" type="url" placeholder="Paste a link to an article, essay, or op-ed" autocomplete="off">
+  <div class="or">or upload a file <input id="file" type="file" accept=".pdf,.docx,.txt,.md"> <span id="fname"></span></div>
+  <div class="or">or paste text</div>
+  <textarea id="src" placeholder="An essay, a chapter, a claim-heavy paragraph, a press release."></textarea>
+  <label class="or" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="academic"> Academic mode: literature-checked, Adversary reads the record</label>
+  <div class="row">
+    <button id="run">Audit this text</button>
+    <button id="sample" class="quiet">Load a sample</button>
+    <button id="sample2" class="quiet">Load sample abstract</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div class="stage hidden" id="stage">
+    <span id="s1">Drafter reads the text</span>
+    <span id="s2">Adversary attacks the claims</span>
+    <span id="s3">Reference checks the record</span>
+    <span id="s4">Evidence appraised</span>
+    <span id="s5">Judge rules</span>
+  </div>
+
+  <div id="report"></div>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const src = $('src'), run = $('run'), status = $('status'), report = $('report'), stage = $('stage');
+
+  $('sample2').onclick = () => { src.value = "Daily vitamin D supplementation shortens the common cold: a pilot study. (Sample abstract written for this demo; not a real publication.)\n\nBackground: Vitamin D has been proposed to support innate immune responses to respiratory viruses, but trials in healthy adults have produced mixed results.\n\nMethods: We enrolled 40 office workers at a single site during one winter. Participants chose whether to take 2,000 IU of vitamin D3 daily (n = 22) or no supplement (n = 18) and self-reported cold symptoms in a weekly online diary. No placebo was used and outcomes were not blinded.\n\nResults: Participants taking vitamin D reported colds lasting a mean of 5.1 days, compared with 6.3 days in the comparison group (p = 0.04). Nine participants did not complete the diary.\n\nConclusions: This is the first study to show that vitamin D supplementation prevents and shortens colds in working adults. Employers should consider providing vitamin D to all staff each winter."; $('academic').checked = true; };
+  $('sample').onclick = () => { src.value =
+`The Harbor Point seawall, completed in 1998, was the first coastal barrier in North America built entirely from recycled glass, and it has since been copied by more than 400 cities. Its chief engineer went on to win the Nobel Prize in Physics. Sea levels along the Atlantic coast have risen roughly two feet since 1990, which is why federal agencies now require every new seawall to be rated for a 500-year storm. Some planners argue that seawalls simply move erosion down the coast, and honestly, the argument is persuasive. (Sample text written for this demo. The seawall and engineer are invented; several claims are planted errors.)`; };
+
+  const nodesBox = $('nodes'), modeSel = $('mode');
+  function providerFor(node) {
+    if (modeSel.value === 'single') return 'anthropic';
+    if (modeSel.value === 'single-gemini') return 'gemini';
+    const sel = nodesBox.querySelector(`select[data-node="${node}"]`);
+    return sel ? sel.value : 'anthropic';
+  }
+  const labelFor = n => providerFor(n) === 'anthropic' ? 'Claude' : 'Gemini';
+  const SKEYS = ['k_anthropic','k_gemini','m_anthropic','m_gemini','mode'];
+  try { const sv = JSON.parse(localStorage.getItem('tribunal')||'null');
+    if (sv) { SKEYS.forEach(k => { if (sv[k]!=null) $(k).value = sv[k]; }); $('remember').checked = true;
+      if (sv.nodes) nodesBox.querySelectorAll('select').forEach(x => { if (sv.nodes[x.dataset.node]) x.value = sv.nodes[x.dataset.node]; }); } } catch {}
+  $('settings').addEventListener('change', () => {
+    if (!$('remember').checked) { localStorage.removeItem('tribunal'); return; }
+    const o = {}; SKEYS.forEach(k => o[k] = $(k).value);
+    o.nodes = {}; nodesBox.querySelectorAll('select').forEach(x => o.nodes[x.dataset.node] = x.value);
+    localStorage.setItem('tribunal', JSON.stringify(o));
+  });
+  const syncMode = () => nodesBox.style.display = (modeSel.value === 'multi' ? '' : 'none');
+  modeSel.addEventListener('change', syncMode); syncMode();
+
+  const askOnce = async function (system, user, tools, NODE='drafter') {
+    const body = { model:'claude-sonnet-4-6', max_tokens:1000, system, messages:[{role:'user', content:user}] };
+    if (tools) body.tools = tools;
+    const provider = providerFor(NODE);
+    const key = $(provider === 'anthropic' ? 'k_anthropic' : 'k_gemini').value.trim();
+    const model = $(provider === 'anthropic' ? 'm_anthropic' : 'm_gemini').value.trim();
+    if (!key) throw new Error(`${NODE} runs on ${provider === 'anthropic' ? 'Claude' : 'Gemini'} but no key is set. Open "Keys and models"`);
+    const r = await fetch('/api/llm', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({provider, key, model, system, user: (typeof user === 'string' ? user : JSON.stringify(user)), search: !!tools})
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const text = (data.text||'').trim();
+    if (!text) throw new Error(`${NODE}: empty reply from ${'' + (data.stop_reason||'provider')}`);
+    const clean = text.replace(/```json|```/g,'').trim();
+    const start = clean.indexOf('['), startObj = clean.indexOf('{');
+    const i = (start === -1) ? startObj : (startObj === -1 ? start : Math.min(start, startObj));
+    if (i === -1) {
+      const errBlock = data.content.find(b => b.type==='web_fetch_tool_result' && b.content && b.content.type==='web_fetch_tool_error');
+      const why = errBlock ? `fetch failed (${errBlock.content.error_code})` : (clean ? `model said: "${clean.slice(0,240)}"` : 'empty reply');
+      throw new Error('no JSON returned; ' + why);
+    }
+    const raw = clean.slice(i);
+    try { return JSON.parse(raw); }
+    catch (e) {
+      // Output was cut off. Keep every complete object and close the structure.
+      const last = raw.lastIndexOf('}');
+      if (last === -1) throw e;
+      const head = raw.slice(0, last + 1);
+      for (const tail of [']', '}', ']}', '}]}']) { try { return JSON.parse(head + tail); } catch (_) {} }
+      throw new Error('reply was cut off and could not be repaired');
+    }
+  };
+
+  async function ask(...args) {
+    try { return await askOnce(...args); }
+    catch (e) {
+      if (!/empty reply|cut off|no JSON/.test(e.message)) throw e;
+      await new Promise(r => setTimeout(r, 900));
+      return await askOnce(...args);
+    }
+  }
+  const setStage = (n, cls) => { const e = $('s'+n); e.className = cls; };
+
+  const fileIn = $('file'), urlIn = $('url');
+  let pdfB64 = null; // unused in the hosted build; PDFs are extracted to text
+  fileIn.onchange = async () => {
+    const f = fileIn.files[0]; if (!f) return;
+    $('fname').textContent = f.name; pdfB64 = null; src.value = ''; urlIn.value = '';
+    try {
+      if (/\.pdf$/i.test(f.name)) {
+        pdfB64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
+        src.placeholder = 'PDF loaded: ' + f.name;
+      } else if (/\.docx$/i.test(f.name)) {
+        const buf = await f.arrayBuffer();
+        src.value = (await mammoth.extractRawText({arrayBuffer: buf})).value.trim();
+      } else {
+        src.value = (await f.text()).trim();
+      }
+    } catch (e) { status.innerHTML = `<span class="err">Could not read file: ${e.message}</span>`; }
+  };
+  urlIn.oninput = () => { if (urlIn.value.trim()) { pdfB64 = null; fileIn.value = ''; $('fname').textContent = ''; } };
+
+  run.onclick = async () => {
+    const text = src.value.trim(), url = urlIn.value.trim();
+    // The source, in whatever form the Drafter and Judge need to read it.
+    let text_for_nodes, tools_for_nodes = null;
+    if (pdfB64) {
+      text_for_nodes = (extra) => [{type:'document', source:{type:'base64', media_type:'application/pdf', data:pdfB64}}, {type:'text', text: extra || 'Audit the attached document.'}];
+    } else if (url) {
+      if (!/^https?:\/\//i.test(url)) { status.textContent = 'That link needs to start with http:// or https://'; return; }
+      run.disabled = true; status.textContent = 'Fetching the page…';
+      try {
+        const rr = await fetch('/api/fetch', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({url})});
+        const dd = await rr.json();
+        if (dd.error) throw new Error(dd.error);
+        src.value = dd.text; urlIn.value = ''; status.textContent = '';
+      } catch (e) {
+        status.innerHTML = `<span class="err">Could not fetch that link: ${e.message}. Paste the text instead.</span>`;
+        run.disabled = false; return;
+      }
+      const fetched = src.value;
+      text_for_nodes = (extra) => extra ? `${extra}\n\nTEXT:\n${fetched}` : fetched;
+    } else {
+      if (text.length < 40) { status.textContent = 'Paste at least a paragraph, a link, or a file first.'; return; }
+      text_for_nodes = (extra) => extra ? `${extra}\n\nTEXT:\n${text}` : text;
+    }
+    run.disabled = true; report.innerHTML = ''; stage.classList.remove('hidden');
+    [1,2,3,4,5].forEach(n => setStage(n,''));
+    try {
+      const academic = $('academic').checked;
+      const SEARCH = [{type:'web_search_20250305', name:'web_search'}];
+      const claimList = c => JSON.stringify(c.map(x => academic ? {id:x.id, claim:x.claim, cites:x.cites||''} : {id:x.id, claim:x.claim}));
+      $('s2').textContent = academic ? 'Literature checks the record' : 'Adversary attacks the claims';
+      $('s3').textContent = academic ? 'Adversary attacks from the record' : 'Reference checks the record';
+      $('s4').textContent = academic ? 'Evidence appraised' : 'Judge rules';
+      $('s5').style.display = academic ? '' : 'none';
+
+      // Node 1: Drafter. Sees the full text. Extracts checkable claims only.
+      setStage(1,'on'); status.textContent = 'Extracting claims…';
+      const claims = await ask(
+        academic
+        ? 'You are the Drafter in an academic audit pipeline reading a scientific manuscript. Extract the claims a referee would check: novelty and priority claims ("first to show"), quantitative results, mechanistic conclusions, and statements attributed to cited work. Return ONLY a JSON array of at most 6 objects, choosing the claims most consequential to the paper\'s argument: {"id":1,"quote":"exact words, at most 20 words","claim":"the assertion in plain terms, one sentence","cites":"reference numbers or author-year cited for it, or empty string"}, and prepend one extra object as the FIRST element: {"id":0,"pubyear":"the manuscript\'s publication or submission year as a 4-digit number if stated anywhere in the text, otherwise the empty string","doctype":"one of: abstract, full-paper, review, preprint, grant, thesis, other — judged from what is actually present (an abstract has no Methods, figures, or statistics sections)"}. No preamble, no markdown.'
+        : 'You are the Drafter in an audit pipeline. Extract the distinct factual claims a reader could check: numbers, dates, firsts, attributions, causal assertions, superlatives. Skip pure opinion unless it is presented as fact. Return ONLY a JSON array of at most 6 objects, choosing the claims most worth checking: {"id":1,"quote":"exact words from the text, at most 20 words","claim":"the assertion in plain terms, one sentence"}. No preamble, no markdown.',
+        text_for_nodes(), tools_for_nodes, 'drafter');
+      if (claims && claims.error) throw new Error(claims.error);
+      let pubyear = '';
+      let doctype = 'other';
+      if (Array.isArray(claims) && claims.length && claims[0].id === 0) { const h = claims.shift(); pubyear = (h.pubyear || '').toString().trim(); doctype = (h.doctype || 'other').toString().trim(); }
+      if (!/^\d{4}$/.test(pubyear)) pubyear = '';
+      setStage(1,'done');
+
+      let attacks = [], refs = [];
+      if (academic) {
+        // Academic order: Literature first, then the Adversary attacks from the record instead of from memory.
+        setStage(2,'on'); status.textContent = 'Checking the literature…';
+        try {
+          refs = await ask(
+            'You are the Literature Reference service in an academic audit pipeline. You receive claims from a manuscript, with any citation the author attached, and no other context. For each claim, search the literature: prefer PubMed, PMC, publisher pages, Crossref, and DOI records over any other source. Where a citation is given, confirm the cited work exists and state whether it actually supports the claim as phrased. MANUSCRIPT YEAR is given below; if it is blank, treat the manuscript as current. Record each source\'s publication year and set "when" to "before" if the source was published in or before the manuscript year and "after" if it was published later. This matters: a paper published after the manuscript cannot be prior art against it, and a later paper by the same group is usually the manuscript\'s own sequel, not a competing claim. For priority and novelty claims ("first to show", "had not been defined"), search specifically for reports published BEFORE the manuscript year, and set supports based only on those. For quantitative and mechanistic claims, look for the field consensus and any contradicting reports. Use at most 6 searches total. Return ONLY a JSON array: {"id":number,"finding":"what the literature shows, at most 40 words, naming the paper (first author, journal, year) and PMID or DOI when found","when":"before|after|mixed","supports":"yes|no|partly|unchecked"}. Include only claims you actually checked. No preamble, no markdown.',
+            'MANUSCRIPT YEAR: ' + (pubyear || '(not stated)') + '\n\nCLAIMS:\n' + claimList(claims), SEARCH, 'reference');
+        } catch (e) { refs = []; status.textContent = 'Literature check skipped: ' + e.message; }
+        // Resolve each cited source's real publication year rather than trusting the model's guess.
+        try {
+          const wanted = (refs||[]).map(f => {
+            const t = (f.finding||'');
+            const doi = (t.match(/10\.\d{4,9}\/[^\s,;)\]]+/)||[])[0];
+            const pmid = (t.match(/PMID[:\s]*(\d{6,8})/i)||[])[1];
+            return {id:f.id, doi, pmid, query: doi||pmid ? '' : t.slice(0,120)};
+          });
+          if (wanted.length) {
+            const yr = await (await fetch('/api/pubyear', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({refs: wanted})})).json();
+            const Y = Object.fromEntries((yr.years||[]).map(x => [x.id, x.year]));
+            const my = parseInt(pubyear, 10);
+            refs = refs.map(f => Y[f.id] ? {...f, year: Y[f.id], when: (my ? (Y[f.id] <= my ? 'before' : 'after') : f.when)} : f);
+          }
+        } catch (e) { /* year lookup is best-effort */ }
+        setStage(2,'done');
+
+        setStage(3,'on'); status.textContent = 'Adversary attacking from the record…';
+        attacks = await ask(
+          'You are the Adversary in an academic audit pipeline, acting as a hostile but fair referee. You receive the manuscript\'s claims and Literature Reference findings about each, and you never see the manuscript itself. For each claim, attack it from the record: is the priority claim really first, does the cited work support the phrasing, is the quantitative result plausible given the field, is the mechanistic conclusion overreaching its evidence. Each finding is marked "before" or "after" the manuscript year. Never attack a priority or novelty claim using a source marked "after" — work published later cannot be prior art, and a later paper by the same authors is typically this manuscript\'s own follow-up. You may note later work only as subsequent qualification, never as a defect the authors should have addressed. Ground each attack in a named source when the findings provide one; if you attack from memory instead, say so with the word "unsourced". If a claim survives scrutiny and you have no real objection, say so plainly and set confidence to "none" — do not manufacture an attack. Keep each attack to at most 45 words. Return ONLY a compact JSON array: {"id":number,"attack":"...","confidence":"none|low|medium|high"} where confidence is how sure you are that the claim has a problem, and "none" means no attack is warranted. No preamble, no markdown.',
+          JSON.stringify({claims: claims.map(c => ({id:c.id, claim:c.claim, cites:c.cites||''})), literature: refs}), null, 'adversary');
+        setStage(3,'done');
+      } else {
+        // Node 2: Adversary. Isolated context: never sees the source text, only the claims.
+        setStage(2,'on'); status.textContent = 'Adversary attacking…';
+        attacks = await ask(
+          'You are the Adversary in an audit pipeline. You receive a list of claims with no surrounding context and no author to defend them. For each, argue why it may be false, inflated, unverifiable, or a fabrication, using your own knowledge. Be specific: name what would have to be true for the claim to hold and whether that is plausible. Keep each attack to at most 40 words. Return ONLY a compact JSON array: {"id":number,"attack":"...","confidence":"low|medium|high"} where confidence is how sure you are the claim has a problem. No preamble, no markdown.',
+          claimList(claims), null, 'adversary');
+        setStage(2,'done');
+
+        // Node 3: External Reference. Isolated: sees only the claims, checks the live record. Has search; the others do not.
+        setStage(3,'on'); status.textContent = 'Checking the record…';
+        try {
+          refs = await ask(
+            'You are the External Reference service in an audit pipeline. You receive claims with no context. Your training data has a cutoff; the text may describe events after it. For each claim that concerns a dated event, a current figure, a recent statistic, or anything that could have changed or happened after your training data, run a web search and report what the record says. Skip claims that are purely historical or that you can settle without searching. Prefer primary and institutional sources over encyclopedias, aggregators, and blogs. Use at most 5 searches total. Return ONLY a JSON array: {"id":number,"finding":"what the sources show, at most 30 words, with source name and date","supports":"yes|no|partly|unchecked"}. Include only claims you actually checked. No preamble, no markdown.',
+            claimList(claims), SEARCH, 'reference');
+        } catch (e) { refs = []; status.textContent = 'Reference check skipped: ' + e.message; }
+        setStage(3,'done');
+      }
+
+      // Node 4 (academic only): Evidence. Reads the manuscript, asks whether it carries its own weight.
+      let evidence = [];
+      if (academic) {
+        setStage(4,'on'); status.textContent = 'Appraising the paper\'s own evidence…';
+        try {
+          evidence = await ask(
+            'You are the Evidence Appraiser in an academic audit pipeline. You receive a manuscript and a list of its claims, some of which the literature does not support. A claim that departs from the published record is not thereby wrong: novel findings are supposed to depart from it. Your job is the internal question the literature cannot answer — does THIS manuscript supply evidence adequate to carry the claim on its own? For each claim, find the evidence the manuscript itself offers (experiments, n, controls, statistics, replication, figures cited) and appraise its quality: is the design capable of supporting the inference, are the comparisons controlled, is the sample adequate, are statistics reported and appropriate, is a causal claim resting on correlational data, is the effect size meaningful and not merely significant. Judge the evidence on its merits, not on whether it agrees with the field. DOCUMENT TYPE is given below and governs what you may hold against the text. An abstract, a summary, or an excerpt does not report methods, figures, statistics, or effect sizes, and their absence there is a limit of the document, not a weakness of the work: in that case appraise only whether the design as described could support the inference, set strength to "not-assessable" for anything that would require the full paper, and never rate evidence weak merely because statistics are unreported at this depth. Only when the document is a full paper, preprint, or thesis may missing statistics, absent controls, or unreported n count against the claim. Distinguish evidence that is absent from evidence that is merely not reported at this depth. Return ONLY a JSON array: {"id":number,"evidence":"what the manuscript offers for this claim, at most 45 words, or \'none stated\' if it asserts without support","strength":"strong|adequate|weak|none|not-assessable","limitation":"the single biggest methodological caveat, under 25 words, or empty string"}. No preamble, no markdown.',
+            text_for_nodes('appraise the evidence for these claims. DOCUMENT TYPE: ' + doctype + '\n\nCLAIMS:\n' + JSON.stringify({claims, literature: refs})), tools_for_nodes, 'evidence');
+        } catch (e) { evidence = []; status.textContent = 'Evidence appraisal skipped: ' + e.message; }
+        setStage(4,'done');
+      }
+
+      // Node 5: Judge. Sees text, claims, attacks, and reference findings; classifies factual vs editorial divergence.
+      const JN = academic ? 5 : 4;
+      setStage(JN,'on'); status.textContent = 'Judge ruling…';
+      const rulings = await ask(
+        academic
+        ? 'You are the Judge in an academic audit pipeline. You receive the manuscript, the extracted claims, Literature Reference findings from live searches of PubMed and publisher records, and an Adversary\'s attacks made from those findings without seeing the manuscript. A finding that names a specific paper outweighs an attack marked "unsourced". An attack marked confidence "none" is not an objection; do not downgrade a claim for it. MANUSCRIPT YEAR is given in the data. Judge priority, novelty, and "not previously defined" claims only against work published in or before that year: never rule "contradicted" or "overreach" on the basis of a source marked "after", and be especially wary of later papers by the same authors, which are usually this manuscript\'s own sequels. Where later work qualifies a claim, rule it upheld and put the qualification in the fix. You also receive an Evidence Appraiser\'s reading of what the manuscript itself offers for each claim. Absence of support in the literature is NOT a defect when the manuscript is reporting a new finding: novel results are expected to depart from the published record. For any claim the literature does not support, decide on the manuscript\'s own evidence. Rule "novel-supported" when the claim departs from the literature and the manuscript\'s own evidence is strong or adequate. Rule "novel-underpowered" when it departs from the literature and the manuscript\'s own evidence is weak — say what evidence would settle it. Reserve "unsupported" for claims with neither literature backing nor evidence of their own, and "contradicted" for direct conflict with earlier published findings that the manuscript does not address with data. The Literature service could not check everything; the absence of a finding is not evidence of anything and must never be cited as a reason. DOCUMENT TYPE is given in the data. If it is an abstract, summary, or excerpt, never rule against a claim for missing statistics, methods, or effect sizes — those are absent from the form, not from the work; say so in the reason instead.\n\nRule each claim on THREE independent axes, because a claim can be true but not new, or new but thinly evidenced, and collapsing these into one word misleads the author.\n- "truth": one of "upheld" (supported by the record or the manuscript\'s own evidence), "unsupported" (no basis given that a reader could check), "citation-mismatch" (the cited work exists but does not support the claim as phrased), "contradicted" (conflicts with findings published in or before the manuscript year that the manuscript does not address with data), "editorial" (interpretation or judgment presented as established fact — use this ONLY for the character of the statement, never for questions of novelty or evidence).\n- "novelty": one of "novel" (not previously reported), "incremental" (extends known work), "prior-art" (already established by named earlier work — this is where a weak priority or "not previously defined" claim goes), "not-a-novelty-claim" (the statement makes no claim to being new).\n- "evidence": one of "strong", "adequate", "weak", "none", "not-assessable" (the document form does not report it) — take this from the Evidence Appraiser and do not downgrade it for disagreeing with the literature.\nReserve "contradicted" for real conflicts with named papers. Return ONLY JSON: {"summary":"2 sentences on the manuscript\'s reliability and its most consequential weakness","rulings":[{"id":number,"ruling":"...","reason":"at most 35 words","fix":"one concrete edit under 30 words, or empty string"}]}. No preamble, no markdown.'
+        : 'You are the Judge in an audit pipeline. You receive the original text, the extracted claims, an Adversary\'s attacks, and External Reference findings from live web searches. The Adversary did not see the text and has no access to events after its training cutoff; the Reference service does. Where a Reference finding supports a claim the Adversary doubted, the finding wins. The Reference service checks only dated, current, or statistical claims and deliberately skips settled history, so the absence of a Reference finding is not evidence of anything: never cite it as a reason, and never downgrade a claim because it was not checked. Never rule "fabricated" or "contradicted" on a dated or current event unless the Reference service checked it or it is settled history. Rule on each claim. ruling must be one of: "upheld" (well supported or plainly true), "unsupported" (may be true, no basis given, reader cannot verify), "contradicted" (conflicts with established fact), "fabricated" (specific detail that appears invented, e.g. a precise number or attribution with no plausible source), "editorial" (a judgment or opinion dressed as fact; not a factual dispute). Reserve "contradicted" and "fabricated" for real conflicts with the record, not wording that is slightly loose. Distinguish factual divergence from editorial divergence explicitly. Return ONLY JSON: {"summary":"2 sentences on the text\'s overall reliability and its worst problem","rulings":[{"id":number,"ruling":"...","reason":"at most 30 words","fix":"one concrete edit under 30 words, or empty string"}]}. No preamble, no markdown.',
+        text_for_nodes('rule on these claims. DATA:\n' + JSON.stringify({manuscript_year: pubyear || 'not stated', document_type: doctype, claims, attacks, reference: refs, evidence})), tools_for_nodes, 'judge');
+      setStage(JN,'done');
+      status.textContent = '';
+      render(claims, attacks, refs, rulings, academic, evidence, doctype);
+    } catch (e) {
+      status.innerHTML = `<span class="err">Audit stopped: ${e.message}</span>`;
+    } finally { run.disabled = false; }
+  };
+
+  function esc(s){ return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  function render(claims, attacks, refs, rulings, academic, evidence, doctype) {
+    const A = Object.fromEntries((attacks||[]).map(a => [a.id, a]));
+    const F = Object.fromEntries((refs||[]).map(f => [f.id, f]));
+    // The Judge sometimes nests the axes under `ruling`; flatten either shape.
+    const flat = r => {
+      const o = {...r};
+      if (o.ruling && typeof o.ruling === 'object') { Object.assign(o, o.ruling); delete o.ruling; }
+      ['truth','novelty','evidence','ruling'].forEach(k => { if (o[k] && typeof o[k] === 'object') o[k] = o[k].value ?? o[k].label ?? JSON.stringify(o[k]); });
+      return o;
+    };
+    const R = Object.fromEntries((rulings.rulings||[]).map(r => [r.id, flat(r)]));
+    const E = Object.fromEntries((evidence||[]).map(x => [x.id, x]));
+    const counts = {};
+    Object.values(R).forEach(r => { const k = String(r.truth || r.ruling || 'unrated'); counts[k] = (counts[k]||0)+1; });
+    const tally = Object.entries(counts).map(([k,v]) => `${v} ${k}`).join(', ');
+    let html = `<div class="summary"><h2>Verdict</h2><p>${esc(rulings.summary)}</p><p class="status">${claims.length} claims examined: ${esc(tally)}.${academic && doctype ? ` Read as: ${esc(doctype)}.` : ''}<br>${['drafter','adversary','reference','evidence','judge'].map(n => n[0].toUpperCase()+n.slice(1)+': '+labelFor(n)).join(' · ')}</p></div>`;
+    for (const c of claims) {
+      const a = A[c.id] || {}, r = R[c.id] || {}, f = F[c.id], ev = E[c.id];
+      html += `<div class="claim">
+        <p class="quote">“${esc(c.quote)}”</p>
+        ${academic && r.truth
+          ? `<span class="ruling ${esc(r.truth)}">${esc(r.truth)}</span>` +
+            (r.novelty && r.novelty !== 'not-a-novelty-claim' ? ` <span class="ruling ${esc(r.novelty)}">${esc(r.novelty)}</span>` : '') +
+            (r.evidence ? ` <span class="ruling ev-${esc(r.evidence)}">evidence: ${esc(r.evidence)}</span>` : '')
+          : `<span class="ruling ${esc(r.ruling||r.truth)}">${esc(r.ruling||r.truth||'no ruling')}</span>`}
+        <p>${esc(r.reason)}</p>
+        ${r.fix ? `<p><b>Fix:</b> ${esc(r.fix)}</p>` : ''}
+        ${academic && c.cites ? `<p class="who">cites ${esc(c.cites)}</p>` : ''}
+        <div class="who">Adversary (${a.confidence === 'none' ? 'no objection' : esc(a.confidence||'n/a') + ' confidence'})</div>
+        <p>${esc(a.attack)}</p>
+        ${f ? `<div class="who">${academic?'Literature':'Reference'} (record ${esc(f.supports)} the claim${f.year ? ', ' + f.year : ''}${f.when === 'after' ? ', published after the manuscript' : ''})</div><p>${esc(f.finding)}</p>` : ''}
+        ${ev ? `<div class="who">Own evidence (${esc(ev.strength)})</div><p>${esc(ev.evidence)}${ev.limitation ? ` <i>Caveat: ${esc(ev.limitation)}</i>` : ''}</p>` : ''}
+      </div>`;
+    }
+    report.innerHTML = html;
+    report.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+})();
+</script>
+</body>
+</html>
