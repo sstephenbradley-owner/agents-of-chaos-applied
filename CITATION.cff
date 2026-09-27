@@ -28,7 +28,7 @@ keywords:
 # identifiers:
 #   - type: doi
 #     value: "10.5281/zenodo.XXXXXXX"   # add after Zenodo mints the DOI
-# repository-code: "https://github.com/OWNER/aoca"   # add after the GitHub repo exists
+repository-code: "https://github.com/sstephenbradley-owner/agents-of-chaos-applied"
 references:
   - type: article
     title: "Agents of Chaos"

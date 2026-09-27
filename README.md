@@ -1,23 +1,3 @@
----
-license: apache-2.0
-language:
-  - en
-tags:
-  - adversarial-validation
-  - cross-model-audit
-  - hallucination-detection
-  - citation-verification
-  - llm-evaluation
-  - human-in-the-loop
-  - evidence-hierarchy
-pretty_name: "AoCA: Agents of Chaos Applied"
-size_categories:
-  - n<1K
-configs:
-  - config_name: fabrication_log
-    data_files: case_studies/fabrication_log.csv
----
-
 # AoCA: Agents of Chaos Applied
 
 **A human-adjudicated, cross-model adversarial review protocol for AI-drafted documents, with a single-agent variant for people who only have one model.**
@@ -336,7 +316,7 @@ Work with no outside evidence base to check against (opinion, taste, brainstormi
 
 ## Contributing to the fabrication log
 
-The log is published as a dataset (the `fabrication_log` config above) because labeled examples of models misstating evidence under adversarial pressure are rare. If you run the protocol and a Drafter, Adversary, Verifier or Judge misstates a source, submit it.
+The log is published as a dataset (`case_studies/fabrication_log.csv`, browsable on Hugging Face as the `fabrication_log` config) because labeled examples of models misstating evidence under adversarial pressure are rare. If you run the protocol and a Drafter, Adversary, Verifier or Judge misstates a source, submit it.
 
 Each entry needs: the date; the role; the model family and, if known, the model version; the claim as made; the category (`fabricated`, `misattributed`, `overstated`, `wrongly_rejected_real_source`); how it was detected and by whom; and enough of the source identifier for someone else to check it. Do not submit confidential documents or personal data. Paraphrase the surrounding text if needed; the claim and the source identifier are what matter.
 
@@ -390,7 +370,7 @@ See `CITATION.cff`. Suggested form:
 
 > Bradley, S. (2026). *AoCA: Agents of Chaos Applied. A human-adjudicated cross-model adversarial review protocol with clinical evidence-hierarchy weighting* (Version 2.0.1) [Protocol and dataset]. Zenodo. DOI: [to be minted]
 
-GitHub: [to be added]. The Hugging Face repository is the canonical copy.
+GitHub: https://github.com/sstephenbradley-owner/agents-of-chaos-applied. A copy with the fabrication log as a browsable dataset is on Hugging Face: [to be added].
 
 ## License
 
