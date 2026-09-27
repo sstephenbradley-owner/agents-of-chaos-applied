@@ -3,7 +3,7 @@ message: "If you use or build on this protocol or the fabrication log, please ci
 type: dataset
 title: "AoCA: Agents of Chaos Applied. A human-adjudicated cross-model adversarial review protocol with clinical evidence-hierarchy weighting"
 version: "2.0.1"
-date-released: "2026-09-26"
+date-released: "2026-09-27"
 license: Apache-2.0
 authors:
   - family-names: Bradley
@@ -25,9 +25,14 @@ keywords:
   - citation verification
   - human-in-the-loop
   - evidence hierarchy
-# identifiers:
-#   - type: doi
-#     value: "10.5281/zenodo.XXXXXXX"   # add after Zenodo mints the DOI
+doi: "10.5281/zenodo.22985670"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.22985670"
+    description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: "10.5281/zenodo.22985671"
+    description: "Version 2.0.1"
 repository-code: "https://github.com/sstephenbradley-owner/agents-of-chaos-applied"
 references:
   - type: article

@@ -1,5 +1,7 @@
 # AoCA: Agents of Chaos Applied
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22985670.svg)](https://doi.org/10.5281/zenodo.22985670)
+
 **A human-adjudicated, cross-model adversarial review protocol for AI-drafted documents, with a single-agent variant for people who only have one model.**
 
 Author: Stephen Bradley, PharmD, Prosthetic Mind Holdings LLC
@@ -368,7 +370,9 @@ Every revision below was triggered by a documented failure in real use rather th
 
 See `CITATION.cff`. Suggested form:
 
-> Bradley, S. (2026). *AoCA: Agents of Chaos Applied. A human-adjudicated cross-model adversarial review protocol with clinical evidence-hierarchy weighting* (Version 2.0.1) [Protocol and dataset]. Zenodo. DOI: [to be minted]
+> Bradley, S. (2026). *AoCA: Agents of Chaos Applied. A human-adjudicated cross-model adversarial review protocol with clinical evidence-hierarchy weighting* (Version 2.0.1) [Protocol and dataset]. Zenodo. https://doi.org/10.5281/zenodo.22985670
+
+That DOI always resolves to the latest version. To cite the exact v2.0.1 snapshot, use https://doi.org/10.5281/zenodo.22985671.
 
 GitHub: https://github.com/sstephenbradley-owner/agents-of-chaos-applied. A copy with the fabrication log as a browsable dataset is on Hugging Face: [to be added].
 
